@@ -85,8 +85,6 @@ class Rpi_configurator(QMainWindow):
                 print(f"No SD card found")
                 self.rpi_detected.setPlainText(f"No Raspberry Pi SD card found")
 
-<<<<<<< HEAD
-=======
         if sys.platform.startswith('win'):
             self.rpi_device = ""
             drvArr = ['c:', 'd:', 'e:', 'f:', 'g:', 'h:', 'i:', 'j:', 'k:', 'l:']
@@ -106,7 +104,6 @@ class Rpi_configurator(QMainWindow):
                 out = "No Raspberry Pi SD card found"
 
             self.rpi_detected.setPlainText(out)
->>>>>>> 774e291a70216d2dd20894fd05a43cef0e203155
 
 
     @pyqtSlot()
