@@ -46,9 +46,9 @@ class Rpi_configurator(QMainWindow):
         self.rpi_detected = QPlainTextEdit("")
         hl.addWidget(self.rpi_detected)
 
-        hl.addWidget(QPushButton('WiFi configuration', self, clicked=self.wifi_config))
-
-
+        wifi_btn = QPushButton('WiFi configuration', self, clicked=self.wifi_config)
+        wifi_btn.setEnabled(False)
+        hl.addWidget(wifi_btn)
 
         main_widget = QWidget(self)
         main_widget.setLayout(hl)
@@ -88,7 +88,6 @@ class Rpi_configurator(QMainWindow):
                 print(f"No SD card found")
                 self.rpi_detected.setText(f"No Raspberry Pi SD card found")
 
-            
 
 
     @pyqtSlot()
