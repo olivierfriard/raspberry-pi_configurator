@@ -9,21 +9,18 @@ sudo iw dev wlx74da38de4952
 
 
 
-
-
-
-
-
-
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton,
                              QVBoxLayout, QHBoxLayout,
-                             QLineEdit, QPlainTextEdit)
+                             QLineEdit, QPlainTextEdit,
+                             QInputDialog)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
 
 import getpass
 import os
+import subprocess
+import pathlib
 
 class Rpi_configurator(QMainWindow):
 
@@ -86,16 +83,53 @@ class Rpi_configurator(QMainWindow):
                 self.rpi_detected.setPlainText(out)
             else:
                 print(f"No SD card found")
-                self.rpi_detected.setText(f"No Raspberry Pi SD card found")
+                self.rpi_detected.setPlainText(f"No Raspberry Pi SD card found")
 
-            
+        if sys.platform.startswith('win'):
+            self.rpi_device = ""
+            drvArr = ['c:', 'd:', 'e:', 'f:', 'g:', 'h:', 'i:', 'j:', 'k:', 'l:']
+            for dl in drvArr:
+                try:
+                    if (os.path.isdir(dl) != 0):
+                        val = subprocess.check_output(["cmd", "/c vol " + dl])
+                        if ('is boot' in str(val)) and (pathlib.Path(dl) / pathlib.Path("cmdline.txt")).is_file():
+                            self.rpi_device = pathlib.Path(dl)
+                            print(f"Raspberry Pi SD card found: {dl}")
+                            out = f"Raspberry Pi SD card found in {dl}"
+                            break
+                except:
+                    print("Error: findDriveByDriveLabel(): exception")
+            else:
+                print("Raspberry Pi SD card not found")
+                out = "No Raspberry Pi SD card found"
+
+            self.rpi_detected.setPlainText(out)
 
 
     @pyqtSlot()
     def wifi_config(self):
         print('wifi config')
+        wifi_name, ok = QInputDialog().getText(self, "WiFi Network ", "name:", QLineEdit.Normal, "")
+        if not ok or not wifi_name:
+            return
+        wifi_password, ok = QInputDialog().getText(self, "WiFi Network ", "Password", QLineEdit.Normal, "")
+        if not ok or not wifi_password:
+            return
+        wpa_template = f"""country=US
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
 
-
+network={{
+ssid="{wifi_name}"
+psk="{wifi_password}"
+key_mgmt=WPA-PSK
+}}
+"""
+        try:
+            with open(self.rpi_device / "wpa_supplicant.conf", "w") as f_out:
+                f_out.write(wpa_template)
+        except Exception:
+            print("Error writing wpa file")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
