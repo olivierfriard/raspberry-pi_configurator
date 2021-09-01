@@ -5,6 +5,12 @@ notes:
 predictable network interface names
 sudo iw dev wlx74da38de4952
 
+wifi access list for windows:
+https://stackoverflow.com/questions/31868486/list-all-wireless-networks-python-for-pc
+
+
+current wifi access point:
+https://stackoverflow.com/questions/19575444/find-name-of-current-wifi-network-on-windows
 
 ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no pi@192.168.1.4
 
