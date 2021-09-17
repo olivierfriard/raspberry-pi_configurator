@@ -16,11 +16,12 @@ ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no pi@192.168.1.4
 
 """
 
-
+__version__ = '1'
+__version_date__ = "2021-09-18"
 
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton,
-                             QVBoxLayout, QHBoxLayout,
+                             QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPlainTextEdit,
                              QInputDialog)
 from PyQt5.QtGui import QIcon
@@ -38,69 +39,134 @@ class Rpi_configurator(QMainWindow):
         self.title = 'Raspberry Pi configurator'
         self.left = 100
         self.top = 100
-        self.width = 320
-        self.height = 200
+        self.width = 640
+        self.height = 480
         self.initUI()
 
         self.rpi_device = ""
+
 
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
-        hl = QVBoxLayout()
+        vl = QVBoxLayout()
 
-        hl.addWidget(QPushButton('Detect Raspberry Pi SD card', self, clicked=self.detect_rpi_sd_card))
+        vl.addWidget(QPushButton('Detect Raspberry Pi SD card', self, clicked=self.detect_rpi_sd_card))
         self.rpi_detected = QPlainTextEdit("")
-        hl.addWidget(self.rpi_detected)
+        vl.addWidget(self.rpi_detected)
 
-        self.hostname_btn = QPushButton('Hostname configuration', self, clicked=self.hostname_config)
+        hl = QHBoxLayout()
+
+        self.hostname_lb = QLabel("Raspberry Pi hostname")
+        self.hostname_lb.setEnabled(False)
+        hl.addWidget(self.hostname_lb)
+
+        self.hostname_le = QLineEdit()
+        self.hostname_le.setEnabled(False)
+        hl.addWidget(self.hostname_le)
+
+        self.hostname_btn = QPushButton("Set hostname", self, clicked=self.set_hostname)
         self.hostname_btn.setEnabled(False)
         hl.addWidget(self.hostname_btn)
 
+        vl.addLayout(hl)
 
-        self.wifi_btn = QPushButton('WiFi configuration', self, clicked=self.wifi_config)
+        hl = QHBoxLayout()
+
+        self.wifi_lb = QLabel("WiFi network")
+        self.wifi_lb.setEnabled(False)
+        hl.addWidget(self.wifi_lb)
+
+        self.essid_le = QLineEdit()
+        self.essid_le.setEnabled(False)
+        hl.addWidget(self.essid_le)
+
+        self.wifi_passwd_le = QLineEdit()
+        self.wifi_passwd_le.setEnabled(False)
+        hl.addWidget(self.wifi_passwd_le)
+
+
+        self.wifi_country_le = QLineEdit()
+        self.wifi_country_le.setEnabled(False)
+        hl.addWidget(self.wifi_country_le)
+
+
+        self.wifi_btn = QPushButton("Configure WiFi", self, clicked=self.wifi_config)
         self.wifi_btn.setEnabled(False)
         hl.addWidget(self.wifi_btn)
 
+        vl.addLayout(hl)
+
+        hl = QHBoxLayout()
+
+        self.security_key_lb = QLabel("Security key")
+        self.security_key_lb.setEnabled(False)
+        hl.addWidget(self.security_key_lb)
+
+        self.security_key_le = QLineEdit()
+        self.security_key_le.setEnabled(False)
+        hl.addWidget(self.security_key_le)
+
+        self.key_btn = QPushButton("Set key", self, clicked=self.set_security_key)
+        self.key_btn.setEnabled(False)
+        hl.addWidget(self.key_btn)
+
+        vl.addLayout(hl)
+
+
         main_widget = QWidget(self)
-        main_widget.setLayout(hl)
+        main_widget.setLayout(vl)
 
         self.setCentralWidget(main_widget)
 
         self.show()
 
+
+    def button_status(self, action):
+        """
+        Change widget status (enable/disable)
+        """
+        for wdgt in [self.hostname_btn, self.hostname_le, self.hostname_lb,
+                     self.wifi_lb, self.essid_le, self.wifi_passwd_le, self.wifi_country_le, self.wifi_btn,
+                     self.security_key_lb,  self.security_key_le, ]:
+            wdgt.setEnabled(action=="enable")
+
+
     @pyqtSlot()
     def detect_rpi_sd_card(self):
-        print('detect_rpi_sd_card')
-        print("currentuser:", getpass.getuser())
+        """
+        Detect if a Raspberry Pi SD card is inserted
+        """
+
+        # print("currentuser:", getpass.getuser())
         current_user = getpass.getuser()
 
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             if os.path.ismount(f"/media/{current_user}/boot"):
 
                 out = f"Raspberry Pi SD card found in /media/{current_user}/boot\n"
 
                 self.rpi_device = pathlib.Path(f"/media/{current_user}/boot")
 
-                self.wifi_btn.setEnabled(True)
-                self.hostname_btn.setEnabled(True)
+                self.button_status("enable")
 
                 # check current hostname on other partition
                 try:
                     with open(f"/media/{current_user}/rootfs/etc/hostname", "r") as file_in:
-                        hostname = file_in.read()
+                        hostname = file_in.read().strip()
+                        self.hostname_le.setText(hostname)
                 except Exception:
                     hostname = ""
-                out += f"\nHostname: {hostname}"
+                out += f"\nCurrent hostname: {hostname}"
 
                 # check current wifi network on other partition
                 try:
                     with open(f"/media/{current_user}/rootfs/etc/wpa_supplicant/wpa_supplicant.conf", "r") as file_in:
                         wpa_supplicant = file_in.read()
                 except Exception:
-                    wpa_supplicant = ""
-                out += f"\nWiFi network:\n{wpa_supplicant}\n"
+                    wpa_supplicant = "None"
+                out += f"\n\nCurrent WiFi network configuration:\n{wpa_supplicant}\n"
 
                 self.rpi_detected.setPlainText(out)
             else:
@@ -118,8 +184,7 @@ class Rpi_configurator(QMainWindow):
                             self.rpi_device = pathlib.Path(dl)
                             out = f"Raspberry Pi SD card found in {dl}"
 
-                            self.wifi_btn.setEnabled(True)
-                            self.hostname_btn.setEnabled(True)
+                            self.button_status("enable")
                             break
                 except:
                     print("Error: findDriveByDriveLabel(): exception")
@@ -130,28 +195,42 @@ class Rpi_configurator(QMainWindow):
 
 
     @pyqtSlot()
-    def hostname_config(self):
+    def set_hostname(self):
         """
-        set hostname
+        Set hostname
         hostname is defined in the /boot/hostname and set during execution of /et
         """
-        hostname, ok = QInputDialog().getText(self, "Hostname", "name:", QLineEdit.Normal, "")
-        if not ok or not hostname:
+        if "_" in self.hostname_le.text():
             return
-        if "_" in hostname:
+
+        if " " in self.hostname_le.text():
             return
+
         try:
             with open(self.rpi_device / "hostname", "w") as f_out:
-                f_out.write(hostname)
+                f_out.write(self.hostname_le.text())
         except Exception:
             print("Error writing /boot/hostname file")
 
-        
 
+    @pyqtSlot()
+    def set_security_key(self):
+        """
+        Set security key
+        """
+        if not self.security_key_le.text():
+            (self.rpi_device / pathlib("worker_security_key")).unlink(missing_ok = True)
+            return
+        try:
+            with open(self.rpi_device / "worker_security_key", "w") as f_out:
+                f_out.write(self.security_key_le.text())
+        except Exception:
+            print("Error writing /boot/worker_security_key file")
 
 
     @pyqtSlot()
     def wifi_config(self):
+        '''
         wifi_name, ok = QInputDialog().getText(self, "WiFi Network ", "name:", QLineEdit.Normal, "")
         if not ok or not wifi_name:
             return
@@ -161,15 +240,15 @@ class Rpi_configurator(QMainWindow):
         wifi_country, ok = QInputDialog().getText(self, "WiFi Network ", "Country (2 letters code)", QLineEdit.Normal, "")
         if not ok or not wifi_country:
             return
+        '''
 
-
-        wpa_template = f"""country={wifi_country}
+        wpa_template = f"""country={self.wifi_country_le.text()}
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
 
 network={{
-ssid="{wifi_name}"
-psk="{wifi_password}"
+ssid="{self.essid_le.text()}"
+psk="{self.wifi_passwd_le.text()}"
 key_mgmt=WPA-PSK
 }}
 """
@@ -178,6 +257,7 @@ key_mgmt=WPA-PSK
                 f_out.write(wpa_template)
         except Exception:
             print("Error writing wpa file")
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
