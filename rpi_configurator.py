@@ -129,7 +129,7 @@ class Rpi_configurator(QMainWindow):
         """
         for wdgt in [self.hostname_btn, self.hostname_le, self.hostname_lb,
                      self.wifi_lb, self.essid_le, self.wifi_passwd_le, self.wifi_country_le, self.wifi_btn,
-                     self.security_key_lb,  self.security_key_le, ]:
+                     self.security_key_lb,  self.security_key_le, self.key_btn]:
             wdgt.setEnabled(action=="enable")
 
 
@@ -167,6 +167,16 @@ class Rpi_configurator(QMainWindow):
                 except Exception:
                     wpa_supplicant = "None"
                 out += f"\n\nCurrent WiFi network configuration:\n{wpa_supplicant}\n"
+
+                # security key
+                try:
+                    with open(f"/media/{current_user}/boot/worker_security_key", "r") as file_in:
+                        security_key = file_in.read().strip()
+                        self.security_key_le.setText(security_key)
+                except Exception:
+                    security_key = ""
+                out += f"\nCurrent hostname: {security_key}"
+
 
                 self.rpi_detected.setPlainText(out)
             else:
